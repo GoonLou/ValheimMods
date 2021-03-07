@@ -22,7 +22,7 @@ namespace ConfigurableFuel
 
         public static ConfigEntry<bool> modEnabled;
 
-        public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
+        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
 
         private void Awake()
         {
@@ -89,29 +89,24 @@ namespace ConfigurableFuel
                             ItemDrop newFuel = newFuelObject.GetComponent<ItemDrop>();
                             if (newFuel != null && __instance.m_fuelItem != newFuel)
                             {
-                                Debugger($"updating {__instance.name} fuel type from {__instance.m_fuelItem.m_itemData.m_shared.m_name} to {newFuel.m_itemData.m_shared.m_name}");
                                 __instance.m_fuelItem = newFuel;
                             }
                         }
                         if (fireMaxFuel != null && ___m_maxFuel != fireMaxFuel.Value)
                         {
-                            Debugger($"updating {__instance.name} max fuel from {___m_maxFuel} to {fireMaxFuel.Value}");
                             ___m_maxFuel = fireMaxFuel.Value;
                         }
                         if (fireStartFuel != null && ___m_startFuel != fireStartFuel.Value)
                         {
-                            Debugger($"updating {__instance.name} start fuel from {___m_startFuel} to {fireStartFuel.Value}");
                             ___m_startFuel = fireStartFuel.Value;
                         }
                         if (fireFuelTimeToBurn != null && ___m_secPerFuel != fireFuelTimeToBurn.Value)
                         {
-                            Debugger($"updating {__instance.name} fuel burn time from {___m_secPerFuel} to {fireFuelTimeToBurn.Value}");
                             ___m_secPerFuel = fireFuelTimeToBurn.Value;
                         }
                     } 
                     RequiresFuel requireFuelComponent = __instance.gameObject.AddComponent<RequiresFuel>();
                     if (fireNoFuel != null) {
-                        Debugger($"{__instance.name} requires fuel:  {!fireNoFuel.Value}");
                         requireFuelComponent.SetRequireFuel(!fireNoFuel.Value);
                     }
                 }
@@ -126,7 +121,6 @@ namespace ConfigurableFuel
                 bool requiresFuel = __instance.GetComponent<RequiresFuel>().GetRequireFuel();
                 if (!requiresFuel)
                 {
-                    Debugger($"Current Fire - {__instance.name}: Updating to not require fuel");
                     __instance.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
                     return;
                 }
