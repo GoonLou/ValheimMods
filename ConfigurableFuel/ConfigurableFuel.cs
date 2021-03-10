@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using System;
 using System.Reflection;
 using UnityEngine;
 
@@ -14,16 +15,22 @@ namespace ConfigurableFuel
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> allNoFuel;
+        public static ConfigEntry<bool> extinguishableFires;
+        public static ConfigEntry<string> toggleFireKey;
 
-        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
+        public static bool toggleFire = true;
+
+        public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
 
         private void Awake()
         {
-            modEnabled = Config.Bind<bool>("00_General", "Enabled", true, "Enable this mod");
-            if (!modEnabled.Value) return;
-
             context = this;
             allNoFuel = Config.Bind<bool>("00_General", "all_Nofuel", false, "Allow all fires to constantly burn without fuel");
+            extinguishableFires = Config.Bind<bool>("00_General", "ExtinguishableFires", true, "Allow all fires to toggle on and off");
+            toggleFireKey = Config.Bind<string>("00_General", "toggleFireKey", "G", "Modifier key to toggle fires on and off. Use https://docs.unity3d.com/Manual/ConventionalGameInput.html");
+
+            modEnabled = Config.Bind<bool>("00_General", "Enabled", true, "Enable this mod");
+            if (!modEnabled.Value) return;
 
             Config.Bind<bool>("01_fire_pit", "fire_pit_NoFuel", false, "Allow fire Pit to constantly burn without fuel");
             Config.Bind<string>("01_fire_pit", "fire_pit_FuelType", "Wood", "Fuel type for Fire Pit");
@@ -44,6 +51,15 @@ namespace ConfigurableFuel
             Config.Bind<float>("03_hearth", "hearth_FuelTimeToBurn", 5000f, "Time for Hearth pit to burn 1 fuel (sec)");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+        }
+        private void Update()
+        {
+            if (Input.GetKeyDown(toggleFireKey.Value.ToLower()))
+            {
+                //Debugger($"Toggle Fire");
+                toggleFire = !toggleFire;
+                ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("gpower");
+            }
         }
 
         [HarmonyPatch(typeof(Fireplace), "Awake")]
@@ -74,11 +90,11 @@ namespace ConfigurableFuel
 
                 if (fireName != null || fireName != "")
                 {
-                    RequiresFuel requireFuelComponent = __instance.gameObject.AddComponent<RequiresFuel>();
+                    ConfigureFuelComponent requireFuelComponent = __instance.gameObject.AddComponent<ConfigureFuelComponent>();
                     //Debugger($"No Fires require fuel: {allNoFuel.Value}");
                     if (!allNoFuel.Value)
                     {
-                        string str = $"{fireName}:";
+                        //string str = $"{fireName}:";
                         context.Config.TryGetEntry<bool>($"{tabName}", $"{fireName}_NoFuel", out fireNoFuel);
                         context.Config.TryGetEntry<string>($"{tabName}", $"{fireName}_FuelType", out fireFuelType);
                         context.Config.TryGetEntry<float>($"{tabName}", $"{fireName}_MaxFuel", out fireMaxFuel);
@@ -87,7 +103,7 @@ namespace ConfigurableFuel
 
                         if (fireNoFuel != null)
                         {
-                            requireFuelComponent.SetRequireFuel(!fireNoFuel.Value);
+                            requireFuelComponent.SetDoesNotRequireFuel(fireNoFuel.Value);
                             //str += $"\n\tRequires Fuel: {!fireNoFuel.Value}";
 
                             if (!fireNoFuel.Value)
@@ -124,7 +140,7 @@ namespace ConfigurableFuel
                     } 
                     else
                     {
-                        requireFuelComponent.SetRequireFuel(false);
+                        requireFuelComponent.SetDoesNotRequireFuel(false);
                     }
                 }
             }
@@ -135,21 +151,56 @@ namespace ConfigurableFuel
         {
             static void Prefix(Fireplace __instance)
             {
-                if (!modEnabled.Value) return;
-                bool requiresFuel = __instance.GetComponent<RequiresFuel>().GetRequireFuel();
-                if (!requiresFuel)
+                if (modEnabled.Value)
                 {
-                    __instance.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
+                    ConfigureFuelComponent configureFuelComponent = __instance.GetComponent<ConfigureFuelComponent>();
+                    if (extinguishableFires.Value)
+                    {
+                        //Debugger($"Toggle fire on: {toggleFire}");
+                        if (toggleFire)
+                        {
+                            __instance.GetComponent<ZNetView>().GetZDO().Set("fuel", configureFuelComponent.GetCurrentFuel());
+                        }
+                        else
+                        {
+                            __instance.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
+                        }
+                    }
+
+                    if (configureFuelComponent.GetDoesNotRequireFuel() && (!extinguishableFires.Value || (extinguishableFires.Value && toggleFire)))
+                    {
+                        __instance.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
+                    }
+
                     return;
                 }
             }
         }
 
-        public class RequiresFuel : MonoBehaviour
+        [HarmonyPatch(typeof(Fireplace), "GetHoverText")]
+        static class Fireplace_GetHoverText_Patch
         {
-            private bool requiresFuel = true;
-            public bool GetRequireFuel() { return requiresFuel; }
-            public void SetRequireFuel(bool reqFuel) { requiresFuel = reqFuel; }
+            static void Postfix(ref string __result)
+            {
+                if (!modEnabled.Value || !extinguishableFires.Value) return;
+                __result += Localization.instance.Localize($"\n[<color=yellow><b>{toggleFireKey.Value}</b></color>] Extinguish Fire");               
+            }
+        }
+
+        public class ConfigureFuelComponent : MonoBehaviour
+        {
+            private bool toggledOn = true;
+            private bool doesNotRequireFuel = true;
+            private float currentFuel = 6f;
+
+            public bool GetToggledOn() { return toggledOn; }
+            public void SetToggledOn(bool togOn) { toggledOn = togOn; }
+
+            public bool GetDoesNotRequireFuel() { return doesNotRequireFuel; }
+            public void SetDoesNotRequireFuel(bool reqFuel) { doesNotRequireFuel = reqFuel; }            
+            
+            public float GetCurrentFuel() { return currentFuel; }
+            public void SetCurrentFuel(float curFuel) { currentFuel = curFuel; }
         }
     }
 }
