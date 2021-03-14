@@ -53,61 +53,56 @@ namespace ConfigurableFuel
 
         private void FixedUpdate()
         {
-            if (!modEnabled.Value || !extinguishableFires.Value) return;
+            if (!modEnabled.Value || !extinguishableFires.Value || Player.m_localPlayer == null) return;
 
             if (Input.GetKeyDown(toggleFireKey.Value.ToLower()))
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit, 10f))
-                {
-                    //TODO: Get hover object from Player
-                    Transform transform = hit.transform;
+                //try
+                //{
                     ConfigureFuelComponent conFuelComp = null;
-                    if (transform.gameObject.GetComponent<ConfigureFuelComponent>() != null)
+                    GameObject hoverObj = Player.m_localPlayer.GetHoverObject();
+                    if (hoverObj.GetComponent<ConfigureFuelComponent>() != null)
                     {
-                        Debugger($"Got component");
-                        conFuelComp = transform.gameObject.GetComponent<ConfigureFuelComponent>();
+                        conFuelComp = hoverObj.GetComponent<ConfigureFuelComponent>();
                     } 
-                    else 
+                    else
                     {
-                        while (conFuelComp == null)
+                        while (hoverObj.transform.parent != null)
                         {
-                            if (transform.parent.gameObject.GetComponent<ConfigureFuelComponent>() != null)
+                            Debugger($"Searching parent");
+                            if (hoverObj.transform.parent.gameObject.GetComponent<ConfigureFuelComponent>() != null)
                             {
                                 Debugger($"Got component");
-                                conFuelComp = transform.parent.gameObject.GetComponent<ConfigureFuelComponent>();
+                                conFuelComp = hoverObj.transform.parent.gameObject.GetComponent<ConfigureFuelComponent>();
                             }
-                            transform = transform.parent.transform;
+                            hoverObj = transform.parent.gameObject;
                         }
                     }
 
-                    if (conFuelComp != null)
+                    bool prevState = conFuelComp.GetToggledOn();
+                    Debugger($"Before Toggle - {prevState}");
+                    if (prevState)
                     {
-                        bool prevState = conFuelComp.GetToggledOn();    
-                        Debugger($"Before Toggle - {prevState}");
-                        if (prevState)
-                        {
-                            conFuelComp.SetCurrentFuel(conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
-                        }
+                        conFuelComp.SetCurrentFuel(conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
+                    }
 
-                        bool newState = !prevState;
-                        conFuelComp.SetToggledOn(newState);
-                        Debugger($"After Toggle - {newState}");
-                        if (newState)
-                        {
-                            Debugger($"Toggling On - {conFuelComp.name}");
-                            conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", conFuelComp.GetCurrentFuel()); 
-                        } 
-                        else
-                        {
-                            Debugger($"Toggling Off - {conFuelComp.name}");
-                            conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
-                        }
+                    bool newState = !prevState;
+                    conFuelComp.SetToggledOn(newState);
+                    Debugger($"After Toggle - {newState}");
+                    if (newState)
+                    {
+                        Debugger($"Toggling On - {conFuelComp.name}");
+                        conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", conFuelComp.GetCurrentFuel());
+                    }
+                    else
+                    {
+                        Debugger($"Toggling Off - {conFuelComp.name}");
+                        conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
+                    }
 
-                        ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
-                    }                    
-                }
+                    ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
+                    
+                //} catch { }
             }
         }
 
@@ -182,6 +177,14 @@ namespace ConfigurableFuel
                     {
                         configureFuelComponent.SetDoesNotRequireFuel(false);
                     }
+
+                    ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
+                    if (m_nview != null)
+                    {
+                        float currentFuel = m_nview.GetZDO().GetFloat("currentFuel");
+                        if (currentFuel > 0f) configureFuelComponent.SetCurrentFuel(currentFuel);
+                        configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
+                    }
                 }
             }
         }
@@ -195,19 +198,33 @@ namespace ConfigurableFuel
                 {
                     return false;
                 }
-                if (!___m_nview.HasOwner())
+                if (modEnabled.Value && extinguishableFires.Value && !__instance.gameObject.GetComponent<ConfigureFuelComponent>().GetToggledOn())
                 {
-                    ___m_nview.ClaimOwnership();
-                }
-                if (modEnabled.Value && extinguishableFires.Value)
-                {
-                    if (!__instance.gameObject.GetComponent<ConfigureFuelComponent>().GetToggledOn())
+                    Inventory inventory = user.GetInventory();
+                    if (inventory != null)
                     {
-                        user.Message(MessageHud.MessageType.Center, Localization.instance.Localize($"Turn on Fire to add {__instance.m_fuelItem.m_itemData.m_shared.m_name}"));
-                        __result = false;
+                        if (inventory.HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name))
+                        {
+                            ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
+                            if ((float)Mathf.CeilToInt(m_nview.GetZDO().GetFloat("fuel")) >= __instance.m_maxFuel)
+                            {
+                                user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_cantaddmore", __instance.m_fuelItem.m_itemData.m_shared.m_name));
+                                return false;
+                            }
+
+                            ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
+                            configureFuelComponent.SetCurrentFuel(configureFuelComponent.GetCurrentFuel() + 1);
+
+                            user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_fireadding", __instance.m_fuelItem.m_itemData.m_shared.m_name));
+                            inventory.RemoveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name, 1);
+                            ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
+                            return false;
+                        }
+                        user.Message(MessageHud.MessageType.Center, "$msg_outof " + __instance.m_fuelItem.m_itemData.m_shared.m_name);
+                        return false;
                     }
                 }
-                return __result;
+                return true;               
             }
         }
 
@@ -237,12 +254,30 @@ namespace ConfigurableFuel
                     float @float = ___m_nview.GetZDO().GetFloat("fuel");
                     string str = "Extinguish Fire";
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
-                    if (!configureFuelComponent.GetToggledOn())
+                    if (configureFuelComponent != null && !configureFuelComponent.GetToggledOn())
                     {
                         @float = configureFuelComponent.GetCurrentFuel();
                         str = "Light Fire";
                     }                    
-                    __result = Localization.instance.Localize(__instance.m_name + " ( $piece_fire_fuel " + Mathf.Ceil(@float) + "/" + (int)__instance.m_maxFuel + " )\n[<color=yellow><b>$KEY_Use</b></color>] $piece_use " + __instance.m_fuelItem.m_itemData.m_shared.m_name + "\n[<color=yellow><b>1-8</b></color>] $piece_useitem\n[<color=yellow><b>"+toggleFireKey.Value+"</b></color>]"+str);
+                    __result = Localization.instance.Localize(__instance.m_name + " ( $piece_fire_fuel " + Mathf.Ceil(@float) + "/" + (int)__instance.m_maxFuel + " )\n[<color=yellow><b>$KEY_Use</b></color>] $piece_use " + __instance.m_fuelItem.m_itemData.m_shared.m_name + "\n[<color=yellow><b>" + toggleFireKey.Value + "</b></color>] " + str + "\n[<color=yellow><b>1-8</b></color>] $piece_useitem");
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(ZNetScene), "Shutdown")]
+        static class ZNetScene_Shutdown_Patch
+        {
+            static void Prefix(ZNetScene __instance)
+            {
+                if (modEnabled.Value && extinguishableFires.Value)
+                {
+                    ConfigureFuelComponent[] configureFuelComponents = FindObjectsOfType<ConfigureFuelComponent>();
+                    foreach (ConfigureFuelComponent configureFuelComponent in configureFuelComponents)
+                    {
+                        ZNetView zNetView = configureFuelComponent.gameObject.GetComponent<ZNetView>();
+                        zNetView.GetZDO().Set("currentFuel", configureFuelComponent.GetCurrentFuel());
+                        zNetView.GetZDO().Set("toggleState", configureFuelComponent.GetToggledOn());
+                    }
                 }
             }
         }
