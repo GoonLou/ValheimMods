@@ -18,7 +18,7 @@ namespace ConfigurableFuel
         public static ConfigEntry<bool> extinguishableFires;
         public static ConfigEntry<string> toggleFireKey;
 
-        public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
+        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
 
         private void Awake()
         {
@@ -57,8 +57,8 @@ namespace ConfigurableFuel
 
             if (Input.GetKeyDown(toggleFireKey.Value.ToLower()))
             {
-                //try
-                //{
+                try
+                {
                     ConfigureFuelComponent conFuelComp = null;
                     GameObject hoverObj = Player.m_localPlayer.GetHoverObject();
                     if (hoverObj.GetComponent<ConfigureFuelComponent>() != null)
@@ -69,18 +69,15 @@ namespace ConfigurableFuel
                     {
                         while (hoverObj.transform.parent != null)
                         {
-                            Debugger($"Searching parent");
-                            if (hoverObj.transform.parent.gameObject.GetComponent<ConfigureFuelComponent>() != null)
+                            hoverObj = hoverObj.transform.parent.gameObject;
+                            if (hoverObj.GetComponent<ConfigureFuelComponent>() != null)
                             {
-                                Debugger($"Got component");
-                                conFuelComp = hoverObj.transform.parent.gameObject.GetComponent<ConfigureFuelComponent>();
+                                conFuelComp = hoverObj.GetComponent<ConfigureFuelComponent>();
                             }
-                            hoverObj = transform.parent.gameObject;
                         }
                     }
 
                     bool prevState = conFuelComp.GetToggledOn();
-                    Debugger($"Before Toggle - {prevState}");
                     if (prevState)
                     {
                         conFuelComp.SetCurrentFuel(conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
@@ -88,21 +85,20 @@ namespace ConfigurableFuel
 
                     bool newState = !prevState;
                     conFuelComp.SetToggledOn(newState);
-                    Debugger($"After Toggle - {newState}");
                     if (newState)
                     {
-                        Debugger($"Toggling On - {conFuelComp.name}");
                         conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", conFuelComp.GetCurrentFuel());
                     }
                     else
                     {
-                        Debugger($"Toggling Off - {conFuelComp.name}");
                         conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
                     }
 
                     ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
                     
-                //} catch { }
+                } catch { 
+                    //Do Nothing
+                }
             }
         }
 
