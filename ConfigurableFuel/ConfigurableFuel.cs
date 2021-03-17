@@ -59,11 +59,11 @@ namespace ConfigurableFuel
             {
                 try
                 {
-                    ConfigureFuelComponent conFuelComp = null;
+                    ConfigureFuelComponent configureFuelComponent = null;
                     GameObject hoverObj = Player.m_localPlayer.GetHoverObject();
                     if (hoverObj.GetComponent<ConfigureFuelComponent>() != null)
                     {
-                        conFuelComp = hoverObj.GetComponent<ConfigureFuelComponent>();
+                        configureFuelComponent = hoverObj.GetComponent<ConfigureFuelComponent>();
                     } 
                     else
                     {
@@ -72,29 +72,36 @@ namespace ConfigurableFuel
                             hoverObj = hoverObj.transform.parent.gameObject;
                             if (hoverObj.GetComponent<ConfigureFuelComponent>() != null)
                             {
-                                conFuelComp = hoverObj.GetComponent<ConfigureFuelComponent>();
+                                configureFuelComponent = hoverObj.GetComponent<ConfigureFuelComponent>();
                             }
                         }
                     }
 
-                    bool prevState = conFuelComp.GetToggledOn();
-                    if (prevState)
+                    if (configureFuelComponent.GetToggledOn())
                     {
-                        conFuelComp.SetCurrentFuel(conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
+                        configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
+                        if (configureFuelComponent.GetCurrentFuel() <= 0f) configureFuelComponent.SetToggledOn(false);
                     }
 
-                    bool newState = !prevState;
-                    conFuelComp.SetToggledOn(newState);
-                    if (newState)
+                    if (configureFuelComponent.GetCurrentFuel() <= 0f)
                     {
-                        conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", conFuelComp.GetCurrentFuel());
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("Add Fuel To Light Fire"));
                     }
                     else
                     {
-                        conFuelComp.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
-                    }
+                        bool newState = !configureFuelComponent.GetToggledOn();
+                        configureFuelComponent.SetToggledOn(newState);
+                        if (newState)
+                        {
+                            configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", configureFuelComponent.GetCurrentFuel());
+                        }
+                        else
+                        {
+                            configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
+                        }
 
-                    ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
+                        ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
+                    }
                     
                 } catch { 
                     //Do Nothing
@@ -174,13 +181,11 @@ namespace ConfigurableFuel
                         configureFuelComponent.SetDoesNotRequireFuel(false);
                     }
 
-                    ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
-                    if (m_nview != null)
-                    {
-                        float currentFuel = m_nview.GetZDO().GetFloat("currentFuel");
-                        if (currentFuel > 0f) configureFuelComponent.SetCurrentFuel(currentFuel);
+                    try { 
+                        ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
+                        configureFuelComponent.SetCurrentFuel(m_nview.GetZDO().GetFloat("currentFuel"));
                         configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
-                    }
+                    } catch { }
                 }
             }
         }
@@ -194,30 +199,34 @@ namespace ConfigurableFuel
                 {
                     return false;
                 }
-                if (modEnabled.Value && extinguishableFires.Value && !__instance.gameObject.GetComponent<ConfigureFuelComponent>().GetToggledOn())
+                if (modEnabled.Value && extinguishableFires.Value)
                 {
-                    Inventory inventory = user.GetInventory();
-                    if (inventory != null)
+                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
+                    if (configureFuelComponent != null && !configureFuelComponent.GetToggledOn())
                     {
-                        if (inventory.HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name))
+                        Inventory inventory = user.GetInventory();
+                        if (inventory != null)
                         {
-                            ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
-                            if ((float)Mathf.CeilToInt(m_nview.GetZDO().GetFloat("fuel")) >= __instance.m_maxFuel)
+                            if (inventory.HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name))
                             {
-                                user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_cantaddmore", __instance.m_fuelItem.m_itemData.m_shared.m_name));
+                                float fuelCount = configureFuelComponent.GetCurrentFuel();
+                                if (fuelCount >= __instance.m_maxFuel)
+                                {
+                                    user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_cantaddmore", __instance.m_fuelItem.m_itemData.m_shared.m_name));
+                                    __result = false;
+                                    return false;
+                                }
+                                user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_fireadding", __instance.m_fuelItem.m_itemData.m_shared.m_name));
+                                inventory.RemoveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name, 1);
+                                ___m_nview.InvokeRPC("AddFuel");
+                                configureFuelComponent.SetCurrentFuel(configureFuelComponent.GetCurrentFuel() + 1);
+                                __result = true;
                                 return false;
                             }
-
-                            ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
-                            configureFuelComponent.SetCurrentFuel(configureFuelComponent.GetCurrentFuel() + 1);
-
-                            user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_fireadding", __instance.m_fuelItem.m_itemData.m_shared.m_name));
-                            inventory.RemoveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name, 1);
-                            ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
+                            user.Message(MessageHud.MessageType.Center, "$msg_outof " + __instance.m_fuelItem.m_itemData.m_shared.m_name);
+                            __result = false;
                             return false;
                         }
-                        user.Message(MessageHud.MessageType.Center, "$msg_outof " + __instance.m_fuelItem.m_itemData.m_shared.m_name);
-                        return false;
                     }
                 }
                 return true;               
@@ -232,11 +241,35 @@ namespace ConfigurableFuel
                 if (modEnabled.Value)
                 {
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
-                    if (configureFuelComponent.GetDoesNotRequireFuel() && (!extinguishableFires.Value || (extinguishableFires.Value && configureFuelComponent.GetToggledOn())))
+                    if (configureFuelComponent.GetToggledOn())
+                    {
+                        configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
+                        if (configureFuelComponent.GetCurrentFuel() <= 0f) configureFuelComponent.SetToggledOn(false);
+                    }
+                    if (configureFuelComponent != null && configureFuelComponent.GetDoesNotRequireFuel() && 
+                        (!extinguishableFires.Value || (extinguishableFires.Value && configureFuelComponent.GetToggledOn())))
                     {
                         __instance.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
                     }                    
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(Fireplace), "IsBurning")]
+        static class Fireplace_IsBurning_Patch
+        {
+            static bool Prefix(Fireplace __instance, ref bool __result)
+            {
+                if (modEnabled.Value)
+                {
+                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
+                    if (!configureFuelComponent.GetToggledOn())
+                    {
+                        __result = false;
+                        return false;
+                    }
+                }
+                return true;
             }
         }
 
@@ -249,13 +282,21 @@ namespace ConfigurableFuel
                 {
                     float @float = ___m_nview.GetZDO().GetFloat("fuel");
                     string str = "Extinguish Fire";
+                    string colour = "yellow";
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
-                    if (configureFuelComponent != null && !configureFuelComponent.GetToggledOn())
+                    if (configureFuelComponent != null)
                     {
-                        @float = configureFuelComponent.GetCurrentFuel();
-                        str = "Light Fire";
+                        if (!configureFuelComponent.GetToggledOn())
+                        {
+                            @float = configureFuelComponent.GetCurrentFuel();
+                            str = "Light Fire";
+                        }
+                        if(configureFuelComponent.GetCurrentFuel() <= 0f)
+                        {
+                            colour = "grey";
+                        } 
                     }                    
-                    __result = Localization.instance.Localize(__instance.m_name + " ( $piece_fire_fuel " + Mathf.Ceil(@float) + "/" + (int)__instance.m_maxFuel + " )\n[<color=yellow><b>$KEY_Use</b></color>] $piece_use " + __instance.m_fuelItem.m_itemData.m_shared.m_name + "\n[<color=yellow><b>" + toggleFireKey.Value + "</b></color>] " + str + "\n[<color=yellow><b>1-8</b></color>] $piece_useitem");
+                    __result = Localization.instance.Localize(__instance.m_name + " ( $piece_fire_fuel " + Mathf.Ceil(@float) + "/" + (int)__instance.m_maxFuel + " )\n[<color=yellow><b>$KEY_Use</b></color>] $piece_use " + __instance.m_fuelItem.m_itemData.m_shared.m_name + "\n[<color="+colour+"><b>" + toggleFireKey.Value + "</b></color>] " + str + "\n[<color=yellow><b>1-8</b></color>] $piece_useitem");
                 }
             }
         }
@@ -263,7 +304,7 @@ namespace ConfigurableFuel
         [HarmonyPatch(typeof(ZNetScene), "Shutdown")]
         static class ZNetScene_Shutdown_Patch
         {
-            static void Prefix(ZNetScene __instance)
+            static void Prefix()
             {
                 if (modEnabled.Value && extinguishableFires.Value)
                 {
@@ -280,8 +321,8 @@ namespace ConfigurableFuel
 
         public class ConfigureFuelComponent : MonoBehaviour
         {
-            private bool toggledOn = true;
-            private bool doesNotRequireFuel = true;
+            private bool toggledOn = false;
+            private bool doesNotRequireFuel = false;
             private float currentFuel = 0f;
 
             public bool GetToggledOn() { return toggledOn; }
