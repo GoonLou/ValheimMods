@@ -7,8 +7,8 @@
     <ProjectGuid>{B0873D9C-C162-41ED-8DA1-C139CF0C616C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ConfigurableFuel</RootNamespace>
-    <AssemblyName>ConfigurableFuel</AssemblyName>
+    <RootNamespace>ConfigurableFire</RootNamespace>
+    <AssemblyName>ConfigurableFire</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -35,7 +35,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ConfigurableFuel.cs" />
+    <Compile Include="ConfigurableFire.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

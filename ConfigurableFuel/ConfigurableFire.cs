@@ -1,24 +1,23 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
-using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace ConfigurableFuel
+namespace ConfigurableFire
 {
-    [BepInPlugin("goonlou.ConfigurableFuel", "Configurable Fuel", "0.1.0")]
+    [BepInPlugin("goonlou.ConfigurableFire", "Configurable Fire", "0.1.0")]
     [BepInProcess("valheim.exe")]
-    public class ConfigurableFuel : BaseUnityPlugin
+    public class ConfigurableFire : BaseUnityPlugin
     {
-        private static ConfigurableFuel context;
+        private static ConfigurableFire context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> allNoFuel;
         public static ConfigEntry<bool> extinguishableFires;
         public static ConfigEntry<string> toggleFireKey;
 
-        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFuel).Namespace}:\n\t{str}"); }
+        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFire).Namespace}:\n\t{str}"); }
 
         private void Awake()
         {

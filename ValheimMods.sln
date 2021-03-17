@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LockPortalTag", "LockPortal
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiFarmDrops", "MultiFarmDrops\MultiFarmDrops.csproj", "{78D334F5-1417-4D59-9D78-E9C338824CB2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurableFuel", "ConfigurableFuel\ConfigurableFuel.csproj", "{B0873D9C-C162-41ED-8DA1-C139CF0C616C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurableFire", "ConfigurableFuel\ConfigurableFire.csproj", "{B0873D9C-C162-41ED-8DA1-C139CF0C616C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
