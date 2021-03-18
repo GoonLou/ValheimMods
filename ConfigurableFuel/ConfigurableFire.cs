@@ -22,27 +22,27 @@ namespace ConfigurableFire
         private void Awake()
         {
             context = this;
-            allNoFuel = Config.Bind<bool>("00_General", "all_Nofuel", false, "Allow all fires to constantly burn without fuel");
-            extinguishableFires = Config.Bind<bool>("00_General", "ExtinguishableFires", true, "Allow all fires to toggle on and off");
+            allNoFuel = Config.Bind<bool>("00_General", "all_Nofuel", false, "Allow all fires to burn without fuel");
+            extinguishableFires = Config.Bind<bool>("00_General", "ExtinguishableFires", true, "Allow all fires to be extinguishable");
             toggleFireKey = Config.Bind<string>("00_General", "toggleFireKey", "G", "Modifier key to toggle fires on and off. Use https://docs.unity3d.com/Manual/ConventionalGameInput.html");
 
             modEnabled = Config.Bind<bool>("00_General", "Enabled", true, "Enable this mod");
             if (!modEnabled.Value) return;
 
-            Config.Bind<bool>("01_fire_pit", "fire_pit_NoFuel", false, "Allow fire Pit to constantly burn without fuel");
-            Config.Bind<string>("01_fire_pit", "fire_pit_FuelType", "Wood", "Fuel type for Fire Pit");
+            Config.Bind<bool>("01_fire_pit", "fire_pit_NoFuel", false, "Allow fire Pit to burn without fuel");
+            Config.Bind<string>("01_fire_pit", "fire_pit_FuelType", "Wood", "Fuel type for Fire Pit. Swap with any Prefab Name https://github.com/Valheim-Modding/Wiki/wiki/ObjectDB-Table");
             Config.Bind<float>("01_fire_pit", "fire_pit_MaxFuel", 10f, "Maximum fuel level for Fire Pit");
             Config.Bind<float>("01_fire_pit", "fire_pit_StartFuel", 1f, "Start fuel level for Fire Pit");
             Config.Bind<float>("01_fire_pit", "fire_pit_FuelTimeToBurn", 5000f, "Time for Fire Pit to burn 1 fuel (sec)");
 
-            Config.Bind<bool>("02_bonfire", "bonfire_NoFuel", false, "Allow Bonfire to constantly burn without fuel");
-            Config.Bind<string>("02_bonfire", "bonfire_FuelType", "Wood", "Fuel type for Bonfire pit");
+            Config.Bind<bool>("02_bonfire", "bonfire_NoFuel", false, "Allow Bonfire to burn without fuel");
+            Config.Bind<string>("02_bonfire", "bonfire_FuelType", "Wood", "Fuel type for Bonfire pit. Swap with any Prefab Name https://github.com/Valheim-Modding/Wiki/wiki/ObjectDB-Table");
             Config.Bind<float>("02_bonfire", "bonfire_MaxFuel", 10f, "Maximum fuel level for Bonfire pit");
             Config.Bind<float>("02_bonfire", "bonfire_StartFuel", 0f, "Start fuel level for Bonfire pit");
             Config.Bind<float>("02_bonfire", "bonfire_FuelTimeToBurn", 5000f, "Time for Bonfire pit to burn 1 fuel (sec)");
 
-            Config.Bind<bool>("03_hearth", "hearth_NoFuel", false, "Allow Hearth to constantly burn without fuel");
-            Config.Bind<string>("03_hearth", "hearth_FuelType", "Wood", "Fuel type for Hearth pit");
+            Config.Bind<bool>("03_hearth", "hearth_NoFuel", false, "Allow Hearth to burn without fuel");
+            Config.Bind<string>("03_hearth", "hearth_FuelType", "Wood", "Fuel type for Hearth pit. Swap with any Prefab Name https://github.com/Valheim-Modding/Wiki/wiki/ObjectDB-Table");
             Config.Bind<float>("03_hearth", "hearth_MaxFuel", 20f, "Maximum fuel level for Hearth pit");
             Config.Bind<float>("03_hearth", "hearth_StartFuel", 0f, "Start fuel level for Hearth pit");
             Config.Bind<float>("03_hearth", "hearth_FuelTimeToBurn", 5000f, "Time for Hearth pit to burn 1 fuel (sec)");
@@ -74,12 +74,6 @@ namespace ConfigurableFire
                                 configureFuelComponent = hoverObj.GetComponent<ConfigureFuelComponent>();
                             }
                         }
-                    }
-
-                    if (configureFuelComponent.GetToggledOn())
-                    {
-                        configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
-                        if (configureFuelComponent.GetCurrentFuel() <= 0f) configureFuelComponent.SetToggledOn(false);
                     }
 
                     if (configureFuelComponent.GetCurrentFuel() <= 0f)
@@ -134,7 +128,7 @@ namespace ConfigurableFire
                     tabName = "03_hearth";
                 }
 
-                if (fireName != null || fireName != "")
+                if (fireName != null && fireName != "")
                 {
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.AddComponent<ConfigureFuelComponent>();
                     if (!allNoFuel.Value)
@@ -204,7 +198,7 @@ namespace ConfigurableFire
                 {
                     return false;
                 }
-                if (modEnabled.Value)
+                if (modEnabled.Value && __instance.gameObject.GetComponent<ConfigureFuelComponent>() != null)
                 {
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
                     if (configureFuelComponent != null)
@@ -222,8 +216,7 @@ namespace ConfigurableFire
                             {
                                 if (inventory.HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name))
                                 {
-                                    float fuelCount = configureFuelComponent.GetCurrentFuel();
-                                    if (fuelCount >= __instance.m_maxFuel)
+                                    if (configureFuelComponent.GetCurrentFuel() >= __instance.m_maxFuel)
                                     {
                                         user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_cantaddmore", __instance.m_fuelItem.m_itemData.m_shared.m_name));
                                         __result = false;
@@ -252,22 +245,19 @@ namespace ConfigurableFire
         {
             static void Prefix(Fireplace __instance)
             {
-                if (modEnabled.Value)
+                if (modEnabled.Value && __instance.gameObject.GetComponent<ConfigureFuelComponent>() != null)
                 {
-                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
-                    if (configureFuelComponent != null)
+                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();                    
+                    if (extinguishableFires.Value && configureFuelComponent.GetToggledOn())
                     {
-                        if (extinguishableFires.Value && configureFuelComponent.GetToggledOn())
-                        {
-                            configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
-                            if (configureFuelComponent.GetCurrentFuel() <= 0f) configureFuelComponent.SetToggledOn(false);
-                        }
-                        if (configureFuelComponent.GetDoesNotRequireFuel() &&
-                            (!extinguishableFires.Value || (extinguishableFires.Value && configureFuelComponent.GetToggledOn())))
-                        {
-                            __instance.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
-                        }
+                        configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
+                        if (configureFuelComponent.GetCurrentFuel() <= 0f) configureFuelComponent.SetToggledOn(false);
                     }
+                    if (configureFuelComponent.GetDoesNotRequireFuel() &&
+                        (!extinguishableFires.Value || (extinguishableFires.Value && configureFuelComponent.GetToggledOn())))
+                    {
+                        __instance.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
+                    }                    
                 }
             }
         }
@@ -277,7 +267,7 @@ namespace ConfigurableFire
         {
             static bool Prefix(Fireplace __instance, ref bool __result)
             {
-                if (modEnabled.Value)
+                if (modEnabled.Value && __instance.gameObject.GetComponent<ConfigureFuelComponent>() != null)
                 {
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
                     if (!configureFuelComponent.GetToggledOn())
@@ -295,7 +285,7 @@ namespace ConfigurableFire
         {
             static void Postfix(Fireplace __instance, ref string __result, ZNetView ___m_nview)
             {
-                if (modEnabled.Value)
+                if (modEnabled.Value && __instance.gameObject.GetComponent<ConfigureFuelComponent>() != null)
                 {
                     ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
                     if (configureFuelComponent != null)
