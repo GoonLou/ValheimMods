@@ -50,7 +50,7 @@ namespace ConfigurableFire
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             if (!modEnabled.Value || !extinguishableFires.Value || Player.m_localPlayer == null) return;
 
