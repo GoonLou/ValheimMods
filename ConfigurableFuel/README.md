@@ -4,11 +4,14 @@ This mod adds configurability to Fires.
 ## Specifications
 * Fires supported - FirePit, Bonfire Hearth, Standing Torches (Wood, Iron and Green), Sconce and Brazier.
 * Configure Max and Start Count, Type and Burn Duration of Fuel for Fires.
-* Disable use the need for Fuels.
+* Disable the need to use Fuels.
 * Extinguish and re-light Fires.
 * Modifier Key (Default: G) for toggling Fires.
 
 ## Installation
+# Vortex on Nexus
+- https://www.nexusmods.com/valheim/mods/561
+# Manual
 1. Install BepInEx
 2. Unzip `ConfigurableFire.zip`
 3. Copy `ConfigurableFire.dll` to `Valheim\BepInEx\plugins`
@@ -266,6 +269,8 @@ brazier_FuelTimeToBurn = 20000
 * v0.0.1: Rename Mod from ConfigurableFuel to ConfigurableFire
 
 ## Planned Future Updates
+* Drop fuel on break. 
+* Multi fuels. 
 * Wet check for torches.
 * Support for any DLC Fires.
 * Bug fixes.
