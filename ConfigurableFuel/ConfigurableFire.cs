@@ -17,7 +17,7 @@ namespace ConfigurableFire
         public static ConfigEntry<bool> extinguishableFires;
         public static ConfigEntry<string> toggleFireKey;
 
-        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFire).Namespace}:\n\t{str}"); }
+        public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFire).Namespace}:\n\t{str}"); }
 
         private void Awake()
         {
@@ -118,6 +118,14 @@ namespace ConfigurableFire
                         if (!prevState)
                         {
                             configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", configureFuelComponent.GetCurrentFuel());
+                            /*if (configureFuelComponent.gameObject.GetComponent<ZNetView>().IsOwner())
+                            {
+                                configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", configureFuelComponent.GetCurrentFuel());
+                            } 
+                            else
+                            {
+                                //get Owner's fuel value
+                            }*/
                         } 
                         else
                         {
@@ -266,7 +274,7 @@ namespace ConfigurableFire
                             {
                                 if (inventory.HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name))
                                 {
-                                    if (configureFuelComponent.GetCurrentFuel() + 1 >= __instance.m_maxFuel)
+                                    if (configureFuelComponent.GetCurrentFuel() > __instance.m_maxFuel -1f)
                                     {
                                         user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_cantaddmore", __instance.m_fuelItem.m_itemData.m_shared.m_name));
                                         __result = false;
