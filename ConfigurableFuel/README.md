@@ -269,6 +269,7 @@ brazier_FuelTimeToBurn = 20000
 ~~~
 
 ## Changelog
+* v0.1.2: Drop fuel and minor bug fixes
 * v0.1.1: Added support for additional fires, optimise toggle click
 * v0.1.0: Initial Release
 * v0.0.1: Rename Mod from ConfigurableFuel to ConfigurableFire
