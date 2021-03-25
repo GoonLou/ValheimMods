@@ -21,7 +21,7 @@ This mod adds configurability to Fires.
 * Or additionally download add the .cfg to `.\BepInEx\config\goonlou.ConfigurableFire.cfg`.  
 
 ~~~ini
-## Settings file was created by plugin Configurable Fire v0.1.0
+## Settings file was created by plugin Configurable Fire v0.1.2
 ## Plugin GUID: goonlou.ConfigurableFire
 
 [00_General]
@@ -30,6 +30,11 @@ This mod adds configurability to Fires.
 # Setting type: Boolean
 # Default value: false
 all_Nofuel = false
+
+## Allow for used fuel over the start fuel count to drop on break
+# Setting type: Boolean
+# Default value: true
+dropFuel = true
 
 ## Allow all fires to be extinguishable
 # Setting type: Boolean
