@@ -5,6 +5,7 @@ This mod adds configurability to Fires.
 * Fires supported - FirePit, Bonfire Hearth, Standing Torches (Wood, Iron and Green), Sconce and Brazier.
 * Configure Max and Start Count, Type and Burn Duration of Fuel for Fires.
 * Disable the need to use Fuels.
+* Drop unused fuel on break, will only drop over the start fuel value.
 * Extinguish and re-light Fires.
 * Modifier Key (Default: G) for toggling Fires.
 
