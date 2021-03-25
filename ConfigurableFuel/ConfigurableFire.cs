@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ConfigurableFire
 {
-    [BepInPlugin("goonlou.ConfigurableFire", "Configurable Fire", "0.1.1")]
+    [BepInPlugin("goonlou.ConfigurableFire", "Configurable Fire", "0.1.2")]
     [BepInProcess("valheim.exe")]
     public class ConfigurableFire : BaseUnityPlugin
     {
@@ -112,31 +112,9 @@ namespace ConfigurableFire
                     }
                     else
                     {
-                        bool prevState = configureFuelComponent.GetToggledOn();
-                        bool newState = !prevState;
-
-                        if (!prevState)
-                        {
-                            configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", configureFuelComponent.GetCurrentFuel());
-                            /*if (configureFuelComponent.gameObject.GetComponent<ZNetView>().IsOwner())
-                            {
-                                configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", configureFuelComponent.GetCurrentFuel());
-                            } 
-                            else
-                            {
-                                //get Owner's fuel value
-                            }*/
-                        } 
-                        else
-                        {
-                            configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
-                        }
-                        configureFuelComponent.SetToggledOn(newState);
-                        if (!newState) configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 0f);
-                        
+                        configureFuelComponent.SetToggledOn(!configureFuelComponent.GetToggledOn());                        
                         ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
-                    }
-                    
+                    }                    
                 } catch { 
                     //Do Nothing
                 }
@@ -216,33 +194,34 @@ namespace ConfigurableFire
                             if (fireStartFuel != null && ___m_startFuel != fireStartFuel.Value)
                             {
                                 ___m_startFuel = fireStartFuel.Value;
-                                configureFuelComponent.SetCurrentFuel(___m_startFuel);
+                                configureFuelComponent.SetStartFuel(___m_startFuel);
                             }
                             if (fireFuelTimeToBurn != null && ___m_secPerFuel != fireFuelTimeToBurn.Value)
                             {
                                 ___m_secPerFuel = fireFuelTimeToBurn.Value;
                             }
-                        }                     
+                        }
                         else
                         {
                             ___m_startFuel = ___m_maxFuel;
                             configureFuelComponent.SetDoesNotRequireFuel(true);
                         }
-                    } 
+                    }
                     else
                     {
                         ___m_startFuel = ___m_maxFuel;
                         configureFuelComponent.SetDoesNotRequireFuel(true);
                     }
 
-                    try { 
+                    configureFuelComponent.SetFuelType(__instance.m_fuelItem.gameObject);
+
+                    try
+                    {
                         ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
-                        if (m_nview.GetZDO().GetBool("hasAlreadyBeenPlaced"))
-                        {
-                            configureFuelComponent.SetCurrentFuel(m_nview.GetZDO().GetFloat("currentFuel"));
-                            configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
-                        }
-                    } catch { }
+                        configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
+                    }
+                    catch { }
+                    
                 }
             }
         }
@@ -274,7 +253,7 @@ namespace ConfigurableFire
                             {
                                 if (inventory.HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name))
                                 {
-                                    if (configureFuelComponent.GetCurrentFuel() > __instance.m_maxFuel -1f)
+                                    if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") > __instance.m_maxFuel -1f)
                                     {
                                         user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_cantaddmore", __instance.m_fuelItem.m_itemData.m_shared.m_name));
                                         __result = false;
@@ -285,7 +264,6 @@ namespace ConfigurableFire
                                         user.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$msg_fireadding", __instance.m_fuelItem.m_itemData.m_shared.m_name));
                                         inventory.RemoveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name, 1);
                                         ___m_nview.InvokeRPC("AddFuel");
-                                        configureFuelComponent.SetCurrentFuel(configureFuelComponent.GetCurrentFuel() + 1);
                                         __result = true;
                                         return false;
                                     }
@@ -308,16 +286,16 @@ namespace ConfigurableFire
             {
                 if (modEnabled.Value && __instance.gameObject.GetComponent<ConfigureFuelComponent>() != null)
                 {
-                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();                    
+                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
+                    configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
                     if (extinguishableFires.Value && configureFuelComponent.GetToggledOn())
                     {
-                        configureFuelComponent.SetCurrentFuel(configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel"));
-                        if (configureFuelComponent.GetCurrentFuel() <= 0f) configureFuelComponent.SetToggledOn(false);
+                        if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") <= 0f) configureFuelComponent.SetToggledOn(false);
                     }
                     if (configureFuelComponent.GetDoesNotRequireFuel() &&
                         (!extinguishableFires.Value || (extinguishableFires.Value && configureFuelComponent.GetToggledOn())))
                     {
-                        __instance.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", __instance.m_maxFuel);
+                        __instance.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 1f);
                     }                    
                 }
             }
@@ -366,10 +344,10 @@ namespace ConfigurableFire
 
                             if (!configureFuelComponent.GetToggledOn())
                             {
-                                @float = configureFuelComponent.GetCurrentFuel();
+                                @float = configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel");
                                 str = "Light Fire";
                             }
-                            if (configureFuelComponent.GetCurrentFuel() <= 0f)
+                            if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") <= 0f)
                             {
                                 colour = "grey";
                             }
@@ -400,8 +378,6 @@ namespace ConfigurableFire
                     foreach (ConfigureFuelComponent configureFuelComponent in configureFuelComponents)
                     {
                         ZNetView zNetView = configureFuelComponent.gameObject.GetComponent<ZNetView>();
-                        zNetView.GetZDO().Set("hasAlreadyBeenPlaced", true);
-                        zNetView.GetZDO().Set("currentFuel", configureFuelComponent.GetCurrentFuel());
                         zNetView.GetZDO().Set("toggleState", configureFuelComponent.GetToggledOn());
                     }
                 }
@@ -413,6 +389,8 @@ namespace ConfigurableFire
             private bool toggledOn = true;
             private bool doesNotRequireFuel = false;
             private float currentFuel = 0f;
+            private float startFuel = 0f;
+            private GameObject fuelType;
 
             public bool GetToggledOn() { return toggledOn; }
             public void SetToggledOn(bool togOn) { toggledOn = togOn; }
@@ -422,6 +400,25 @@ namespace ConfigurableFire
             
             public float GetCurrentFuel() { return currentFuel; }
             public void SetCurrentFuel(float curFuel) { currentFuel = curFuel; }
+
+            public void SetStartFuel(float strtFuel) { startFuel = strtFuel; }
+
+            public void SetFuelType(GameObject fueltyp) { fuelType = fueltyp;  }
+
+            private void OnDestroy()
+            {
+                if (!doesNotRequireFuel)
+                {
+                    int count = (int)(currentFuel - startFuel);
+                    Debugger($"Count: {count}");
+                    while (count > 0)
+                    {
+                        ItemDrop component = Object.Instantiate(fuelType, this.transform.position + Vector3.up, Quaternion.identity).GetComponent<ItemDrop>();
+                        component.SetStack(Mathf.Min(count, component.m_itemData.m_shared.m_maxStackSize));
+                        count -= component.m_itemData.m_stack;
+                    }
+                }
+            }
         }
     }
 }
