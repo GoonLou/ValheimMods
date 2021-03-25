@@ -18,7 +18,7 @@ namespace ConfigurableFire
         public static ConfigEntry<bool> extinguishableFires;
         public static ConfigEntry<string> toggleFireKey;
 
-        public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFire).Namespace}:\n\t{str}"); }
+        //public static void Debugger(string str = "") { Debug.Log($"\n{typeof(ConfigurableFire).Namespace}:\n\t{str}"); }
 
         private void Awake()
         {
@@ -215,6 +215,7 @@ namespace ConfigurableFire
                     }
                     
                     configureFuelComponent.SetFuelType(__instance.m_fuelItem.gameObject);
+                    configureFuelComponent.SetStartFuel(___m_startFuel);
 
                     try
                     {
@@ -401,6 +402,7 @@ namespace ConfigurableFire
             public float GetCurrentFuel() { return currentFuel; }
             public void SetCurrentFuel(float curFuel) { currentFuel = curFuel; }
 
+            public void SetStartFuel(float strtFuel) { startFuel = strtFuel; }
             public void SetFuelType(GameObject fueltyp) { fuelType = fueltyp; }
 
             private void OnDestroy()
@@ -408,7 +410,6 @@ namespace ConfigurableFire
                 if (!doesNotRequireFuel && dropFuel.Value)
                 {
                     int count = (int)(currentFuel - startFuel);
-                    Debugger($"Count: {count}");
                     while (count > 0)
                     {
                         ItemDrop component = Object.Instantiate(fuelType, this.transform.position + Vector3.up, Quaternion.identity).GetComponent<ItemDrop>();
