@@ -14,6 +14,7 @@ namespace ConfigurableFire
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> allNoFuel;
+        public static ConfigEntry<bool> dropFuel;
         public static ConfigEntry<bool> extinguishableFires;
         public static ConfigEntry<string> toggleFireKey;
 
@@ -23,6 +24,7 @@ namespace ConfigurableFire
         {
             context = this;
             allNoFuel = Config.Bind<bool>("00_General", "all_Nofuel", false, "Allow all fires to burn without fuel");
+            dropFuel = Config.Bind<bool>("00_General", "dropFuel", true, "Allow for used fuel over the start fuel count to drop on break");
             extinguishableFires = Config.Bind<bool>("00_General", "ExtinguishableFires", true, "Allow all fires to be extinguishable");
             toggleFireKey = Config.Bind<string>("00_General", "toggleFireKey", "G", "Modifier key to toggle fires on and off. Use https://docs.unity3d.com/Manual/ConventionalGameInput.html");
 
@@ -194,7 +196,6 @@ namespace ConfigurableFire
                             if (fireStartFuel != null && ___m_startFuel != fireStartFuel.Value)
                             {
                                 ___m_startFuel = fireStartFuel.Value;
-                                configureFuelComponent.SetStartFuel(___m_startFuel);
                             }
                             if (fireFuelTimeToBurn != null && ___m_secPerFuel != fireFuelTimeToBurn.Value)
                             {
@@ -212,7 +213,7 @@ namespace ConfigurableFire
                         ___m_startFuel = ___m_maxFuel;
                         configureFuelComponent.SetDoesNotRequireFuel(true);
                     }
-
+                    
                     configureFuelComponent.SetFuelType(__instance.m_fuelItem.gameObject);
 
                     try
@@ -344,7 +345,6 @@ namespace ConfigurableFire
 
                             if (!configureFuelComponent.GetToggledOn())
                             {
-                                @float = configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel");
                                 str = "Light Fire";
                             }
                             if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") <= 0f)
@@ -401,13 +401,11 @@ namespace ConfigurableFire
             public float GetCurrentFuel() { return currentFuel; }
             public void SetCurrentFuel(float curFuel) { currentFuel = curFuel; }
 
-            public void SetStartFuel(float strtFuel) { startFuel = strtFuel; }
-
-            public void SetFuelType(GameObject fueltyp) { fuelType = fueltyp;  }
+            public void SetFuelType(GameObject fueltyp) { fuelType = fueltyp; }
 
             private void OnDestroy()
             {
-                if (!doesNotRequireFuel)
+                if (!doesNotRequireFuel && dropFuel.Value)
                 {
                     int count = (int)(currentFuel - startFuel);
                     Debugger($"Count: {count}");
