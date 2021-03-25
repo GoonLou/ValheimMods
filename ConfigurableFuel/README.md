@@ -5,6 +5,7 @@ This mod adds configurability to Fires.
 * Fires supported - FirePit, Bonfire Hearth, Standing Torches (Wood, Iron and Green), Sconce and Brazier.
 * Configure Max and Start Count, Type and Burn Duration of Fuel for Fires.
 * Disable the need to use Fuels.
+* Drop unused fuel on break, will only drop over the start fuel value.
 * Extinguish and re-light Fires.
 * Modifier Key (Default: G) for toggling Fires.
 
@@ -21,7 +22,7 @@ This mod adds configurability to Fires.
 * Or additionally download add the .cfg to `.\BepInEx\config\goonlou.ConfigurableFire.cfg`.  
 
 ~~~ini
-## Settings file was created by plugin Configurable Fire v0.1.0
+## Settings file was created by plugin Configurable Fire v0.1.2
 ## Plugin GUID: goonlou.ConfigurableFire
 
 [00_General]
@@ -30,6 +31,11 @@ This mod adds configurability to Fires.
 # Setting type: Boolean
 # Default value: false
 all_Nofuel = false
+
+## Allow for used fuel over the start fuel count to drop on break
+# Setting type: Boolean
+# Default value: true
+dropFuel = true
 
 ## Allow all fires to be extinguishable
 # Setting type: Boolean
@@ -264,6 +270,7 @@ brazier_FuelTimeToBurn = 20000
 ~~~
 
 ## Changelog
+* v0.1.2: Drop fuel and minor bug fixes
 * v0.1.1: Added support for additional fires, optimise toggle click
 * v0.1.0: Initial Release
 * v0.0.1: Rename Mod from ConfigurableFuel to ConfigurableFire
