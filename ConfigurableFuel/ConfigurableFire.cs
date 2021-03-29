@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ConfigurableFire
 {
-    [BepInPlugin("goonlou.ConfigurableFire", "Configurable Fire", "0.1.2")]
+    [BepInPlugin("goonlou.ConfigurableFire", "Configurable Fire", "0.1.3")]
     [BepInProcess("valheim.exe")]
     public class ConfigurableFire : BaseUnityPlugin
     {
@@ -223,7 +223,6 @@ namespace ConfigurableFire
                         configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
                     }
                     catch { }
-                    
                 }
             }
         }
@@ -344,14 +343,8 @@ namespace ConfigurableFire
                                 return;
                             }
 
-                            if (!configureFuelComponent.GetToggledOn())
-                            {
-                                str = "Light Fire";
-                            }
-                            if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") <= 0f)
-                            {
-                                colour = "grey";
-                            }
+                            if (!configureFuelComponent.GetToggledOn()) str = "Light Fire";
+                            if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") <= 0f) colour = "grey";
 
                             __result = Localization.instance.Localize(__instance.m_name + " ( $piece_fire_fuel " + Mathf.Ceil(@float) + "/" + (int)__instance.m_maxFuel + " )\n[<color=yellow><b>$KEY_Use</b></color>] $piece_use " + __instance.m_fuelItem.m_itemData.m_shared.m_name + "\n[<color=" + colour + "><b>" + toggleFireKey.Value + "</b></color>] " + str + "\n[<color=yellow><b>1-8</b></color>] $piece_useitem");
                             return;
@@ -364,6 +357,19 @@ namespace ConfigurableFire
                             return;
                         }
                     }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(WearNTear), "Destroy")]
+        static class WearNTear_Destroy_Patch
+        {
+            static void Prefix(WearNTear __instance)
+            {
+                if (modEnabled.Value && dropFuel.Value)
+                {
+                    ConfigureFuelComponent configureFuelComponent = __instance.gameObject.GetComponent<ConfigureFuelComponent>();
+                    if (configureFuelComponent != null) configureFuelComponent.Destroy();
                 }
             }
         }
@@ -397,17 +403,17 @@ namespace ConfigurableFire
             public void SetToggledOn(bool togOn) { toggledOn = togOn; }
 
             public bool GetDoesNotRequireFuel() { return doesNotRequireFuel; }
-            public void SetDoesNotRequireFuel(bool reqFuel) { doesNotRequireFuel = reqFuel; }            
-            
+            public void SetDoesNotRequireFuel(bool reqFuel) { doesNotRequireFuel = reqFuel; }
+
             public float GetCurrentFuel() { return currentFuel; }
             public void SetCurrentFuel(float curFuel) { currentFuel = curFuel; }
 
             public void SetStartFuel(float strtFuel) { startFuel = strtFuel; }
             public void SetFuelType(GameObject fueltyp) { fuelType = fueltyp; }
 
-            private void OnDestroy()
+            public void Destroy()
             {
-                if (!doesNotRequireFuel && dropFuel.Value)
+                if (!doesNotRequireFuel)
                 {
                     int count = (int)(currentFuel - startFuel);
                     while (count > 0)
