@@ -217,12 +217,15 @@ namespace ConfigurableFire
                     configureFuelComponent.SetFuelType(__instance.m_fuelItem.gameObject);
                     configureFuelComponent.SetStartFuel(___m_startFuel);
 
-                    try
+                    if (extinguishableFires.Value)
                     {
-                        ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
-                        configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
+                        try
+                        {
+                            ZNetView m_nview = __instance.gameObject.GetComponent<ZNetView>();
+                            configureFuelComponent.SetToggledOn(m_nview.GetZDO().GetBool("toggleState"));
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
             }
         }
