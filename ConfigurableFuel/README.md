@@ -276,7 +276,6 @@ brazier_FuelTimeToBurn = 20000
 * v0.0.1: Rename Mod from ConfigurableFuel to ConfigurableFire
 
 ## Planned Future Updates
-* Drop fuel on break. 
 * Multi fuels. 
 * Wet check for torches.
 * Support for any DLC Fires.
