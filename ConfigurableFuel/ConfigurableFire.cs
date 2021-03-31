@@ -116,7 +116,10 @@ namespace ConfigurableFire
                     {
                         configureFuelComponent.SetToggledOn(!configureFuelComponent.GetToggledOn());                        
                         ((ZSyncAnimation)typeof(Player).GetField("m_zanim", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Player.m_localPlayer)).SetTrigger("interact");
-                    }                    
+                    }
+
+                    ZNetView m_nview = configureFuelComponent.gameObject.GetComponent<ZNetView>();
+                    m_nview.GetZDO().Set("toggleState", configureFuelComponent.GetToggledOn());
                 } catch { 
                     //Do Nothing
                 }
@@ -295,11 +298,6 @@ namespace ConfigurableFire
                     if (extinguishableFires.Value && configureFuelComponent.GetToggledOn())
                     {
                         if (configureFuelComponent.gameObject.GetComponent<ZNetView>().GetZDO().GetFloat("fuel") <= 0f) configureFuelComponent.SetToggledOn(false);
-                    }
-                    if (configureFuelComponent.GetDoesNotRequireFuel() &&
-                        (!extinguishableFires.Value || (extinguishableFires.Value && configureFuelComponent.GetToggledOn())))
-                    {
-                        __instance.gameObject.GetComponent<ZNetView>().GetZDO().Set("fuel", 1f);
                     }                    
                 }
             }
