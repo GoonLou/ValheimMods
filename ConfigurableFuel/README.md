@@ -270,6 +270,7 @@ brazier_FuelTimeToBurn = 20000
 ~~~
 
 ## Changelog
+* v0.1.4: Fixed issues where fires would revert back to initial load state and NoFuel fires would burn out.
 * v0.1.3: Fuel Dropping and extinguishableFires false bugs
 * v0.1.2: Drop fuel and minor bug fixes
 * v0.1.1: Added support for additional fires, optimise toggle click
