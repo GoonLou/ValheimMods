@@ -1,7 +1,7 @@
 # Configurable Fire
 This mod adds configurability to Fires.
 
-# Current Version - 0.1.4
+### Current Version - 0.1.4
 
 ## Specifications
 * Fires supported - FirePit, Bonfire Hearth, Standing Torches (Wood, Iron and Green), Sconce and Brazier.
